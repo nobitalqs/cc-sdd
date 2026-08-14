@@ -59,7 +59,7 @@ cc-sdd v3 已经拥有 Requirements、Design、Tasks、逐任务 Implementation 
 - 由代码拒绝非法阶段顺序、缺失前置条件和证据不完整的完成请求。
 - 历史阶段证据核验已提交快照；当前 `spec.json` 只核验其最新审批语义，不要求字节永远等于早期阶段版本。
 - 明确 Implementation 没有额外 Claude 阶段审批，避免状态模型要求不存在的审批产物。
-- `complete` 只能在最终 Codex Validation 为 GO、Claude 为 APPROVED 且主 Codex核验通过后成立。
+- `complete` 只能在最终 Codex Validation 为 GO、Claude 为 APPROVED 且主 Codex 核验通过后成立。
 - 保持小型可变状态账本；本轮不引入事件溯源或通用 reducer。
 
 #### 4. 控制 Claude 审查成本
