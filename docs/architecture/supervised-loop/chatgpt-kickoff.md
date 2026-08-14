@@ -11,7 +11,7 @@
 预期基线分支：`main`
 预期已审查上游提交：`29aee950f4addc36f9aeecb9881c46540e71ecc9`
 Bootstrap Issue：`https://github.com/nobitalqs/cc-sdd/issues/1`
-Draft PR（如已创建）：`<draft-pr-url-or-number>`
+Draft PR：`https://github.com/nobitalqs/cc-sdd/pull/2`
 
 按以下顺序阅读：
 

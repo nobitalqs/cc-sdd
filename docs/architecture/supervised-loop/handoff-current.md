@@ -1,7 +1,7 @@
 # 当前交接：cc-sdd 监督循环/状态图
 
 > 快照日期：2026-08-14（Asia/Tokyo）
-> 状态：已完成中文化并进入 GitHub 交接阶段；以“GitHub 发布状态”一节为准。
+> 状态：中文迁移档案已推送到个人 fork；Bootstrap Issue 和 draft PR 已创建。
 
 ## 已确认方向
 
@@ -36,7 +36,7 @@ GitHub 只读检查确认：
 - Fork：`nobitalqs/cc-sdd`
 - 工作分支：`agent/supervised-loop-graph-bootstrap`
 - Bootstrap Issue：`https://github.com/nobitalqs/cc-sdd/issues/1`
-- Draft PR：尚未创建。
+- Draft PR：`https://github.com/nobitalqs/cc-sdd/pull/2`
 - 上游写入：无。
 
 ## 私有原型保留的脱敏事实
@@ -57,11 +57,10 @@ GitHub 只读检查确认：
 
 ## 建议的下一步
 
-1. 人工复核这五份文件的产品意图和公开披露范围。
-2. 重新核验上游 `main` 和已认证 GitHub 账号。
-3. 仅在明确获得外部写入授权后：fork `gotalab/cc-sdd`、保留 upstream 关联，并创建非默认 bootstrap 分支。
-4. 提交脱敏档案，创建 Bootstrap Issue，并创建仅包含架构/回放脚手架的 draft PR。
-5. 使用 `chatgpt-kickoff.md` 启动 ChatGPT 网页会话；要求它在提出代码变更前读取 Issue 和 draft PR。
+1. 使用 `chatgpt-kickoff.md` 启动 ChatGPT 网页会话，执行第一轮只读架构审查。
+2. 要求网页会话核验当前上游 HEAD，并将交接内容与 cc-sdd v3 的现状逐项对比。
+3. 人工审阅它对 Issue #1 和 draft PR #2 的修改建议。
+4. 仅在里程碑 1 范围再次明确后，单独授权实现性提交；当前授权不包含实现、merge 或 release。
 
 ## 外部写入边界
 
