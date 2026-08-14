@@ -37,6 +37,7 @@ GitHub 只读检查确认：
 - 工作分支：`agent/supervised-loop-graph-bootstrap`
 - Bootstrap Issue：`https://github.com/nobitalqs/cc-sdd/issues/1`
 - Draft PR：`https://github.com/nobitalqs/cc-sdd/pull/2`
+- 默认分支保护：active `protect-main` ruleset（ID `20836014`）；禁止删除和 force push，要求通过 PR 合入，批准数为 0，不要求 status checks。
 - 上游写入：无。
 
 ## 私有原型保留的脱敏事实
