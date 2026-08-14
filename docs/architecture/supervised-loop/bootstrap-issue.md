@@ -2,110 +2,109 @@
 
 ## 标题
 
-`[架构] 为 cc-sdd 工作流增加版本化监督循环/状态图内核`
+`[Codex] 移植并稳定由 Claude 审批的 cc-sdd 监督循环`
 
 ## 正文
 
 ### 问题
 
-cc-sdd v3 已经负责规格驱动的方法执行：discovery、requirements、design、tasks、带独立审查/调试的自主逐任务实现、完成性核验和功能级验证。面向长期跨代理运行，目前缺少的是一层小而明确的监督机制。
+cc-sdd v3 已经拥有 Requirements、Design、Tasks、逐任务 Implementation 审查/调试、完成性核验和功能级 Validation。需要补充的不是一套新的规格方法或通用工作流引擎，而是一项可选的 Codex 专用监督能力：让 Codex 主任务协调隔离的阶段任务，并在每个规格阶段和最终验收处引入 Claude Code 的只读对抗性审查。
 
-一个下游原型已经验证了目标协调方式，但它把重要行为编码在文档约定和 provider 特定脚本中。其可变状态无法确定性回放，合法阶段顺序未被完全强制，历史批准数据和当前批准数据混在一起，审查者/工具预算也不是一等对象。直接把该原型复制进 cc-sdd 会保留错误的抽象。
+一套私有下游 harness 已经实际运行了这条线性流程，证明了角色分离和阶段隔离的价值，也暴露了若干具体问题：最终 Validation 被重复执行、可变 `spec.json` 被错误地当作不可变历史产物、状态 helper 没有完整强制阶段顺序和完成条件，以及 Claude 审查因重复发现仓库上下文而产生异常高的额度消耗。
+
+本 Issue 只负责将这套现有 loop 以最小方式移植到 cc-sdd fork，并修复这些已观察到的问题。
 
 ### 目标
 
-设计并落地最小的版本化循环/状态图内核，在不改变 cc-sdd 默认行为的前提下表达当前线性工作流，同时支持：
+在不改变 cc-sdd 默认工作流的前提下，增加一个显式调用的 `kiro-supervise` Codex skill，使其能够：
 
-- 在隔离工作者上下文之间保持监督者状态；
-- 结构化独立审查 gate；
-- 合法转换和失效传播；
-- 不可变证据溯源；
-- 中断安全恢复；
-- 策略/provider 版本固定；以及
-- 对合成运行进行确定性回放。
+- 由 Codex 主任务持续监督一次完整规格任务；
+- 为 Requirements、Design、Tasks、Implementation 和 Validation 分别使用新的可见 Codex 任务；
+- 在规格阶段和最终 Validation 中调用 Claude Code 做只读对抗性审查；
+- 由主 Codex 独立核验 Kiro gate 和 Claude 意见后批准并推进阶段；
+- 在中断后从一个小型状态账本安全恢复；以及
+- 保留现有模型、权限和会话约束。
 
-### 首个里程碑的非目标
+### 固定工作流合同
 
-- 重写 cc-sdd skills 或 `/kiro-impl`。
-- 在 cc-sdd 逐任务审查者之外再增加一层 Implementation 审查者。
-- 构建通用可视化工作流编辑器。
-- 支持所有 coding-agent provider。
-- 将项目特定的分支、resolver、测试或依赖 lock 规则引入内核。
-- 由 harness 发起网络写入或发布变更。
-- 在具备用量和故障遥测前优化提示词。
+1. 主 Codex 任务只调度、核验证据、批准和推进，不直接编写规格、实现任务或执行功能验收。
+2. 每个阶段使用独立的 Codex Desktop 任务；阶段返修恢复原任务，不新建重复任务。
+3. 阶段工作者调用 cc-sdd 已有 skill，不重新实现 Requirements、Design、Tasks 或 Implementation 方法。
+4. Requirements、Design 和 Tasks 只有在原始 Kiro gate、Claude 审查和主 Codex 核验三者一致后才能批准。
+5. Implementation 使用独立的 Luna Max 任务，并继续复用 cc-sdd 内置的逐任务实现者、审查者、调试者和完成性核验。
+6. 最终 Validation 由新的 Codex 任务唯一负责；Claude 审查其证据，但不无条件重复完整测试。
+7. Claude Code 继承用户级默认模型和思考配置，保持 bypass permission，并通过操作系统隔离防止写入真实 worktree。
+8. Claude 会话只在同一阶段的最多三轮返修中复用；跨阶段使用新会话和有界阶段档案。
+9. Claude 的结论不能直接批准阶段；主 Codex 必须逐项核验，错误意见应记录为已驳回并附证据。
 
-### 架构边界
+### 本轮实现范围
 
-内核接收事实，返回投影和合法后续动作。它不直接调用模型、Git、测试或任务宿主。
+#### 1. 可安装的 Codex skill
 
-```text
-状态图 + 策略 + 既有事件 + 新事实
-                  |
-                  v
-          确定性 reducer
-                  |
-                  v
-          投影 + 合法动作
+- 在 `tools/cc-sdd/templates/agents/codex-skills/skills/kiro-supervise/` 增加监督 skill、协议、状态 helper、Claude wrapper 和单元测试。
+- 复用现有 Codex Skills manifest 的目录复制机制。
+- 将真实 manifest 测试从 17 个 skill 更新为 18 个，并验证安装产物。
+- 首个版本明确面向提供可见任务管理能力的 Codex Desktop 和 Linux 隔离环境；缺少必要能力时必须 fail closed。
 
-adapter 执行已授权动作，并追加结构化结果事件
-```
+#### 2. 消除重复 Validation
 
-Provider 特定动作位于声明 capability 的 adapter 之后。第一个实用集成可以面向 cc-sdd、Codex 任务宿主和 Claude Code 审查，但内核状态机中不得包含任何 provider 名称。
+- 为 Codex 版 `/kiro-impl` 增加 `--final-validation run|deferred` 选项，默认值为 `run`。
+- 独立使用 `/kiro-impl` 时保持当前行为不变。
+- `kiro-supervise` 使用 `deferred`：Implementation 在全部任务完成并通过逐任务核验后返回 `READY_FOR_VALIDATION`，不执行功能级 Validation。
+- 新的 Validation 任务成为唯一的 `/kiro-validate-impl` 执行者。
 
-### 必需领域对象
+#### 3. 修复状态账本
 
-- 版本化状态图定义；
-- 运行授权和外部写入边界；
-- 节点尝试和执行上下文身份；
-- 结构化 gate/审查结果；
-- 不可变证据引用；
-- 追加式事件；
-- 可重建投影；
-- 失效事件；
-- 连续性中断事件；
-- 故障分类；以及
-- 预算/用量观测。
+- 状态中固定 harness schema 版本、目标仓库/worktree 身份、基线、阶段和运行配置。
+- 由代码拒绝非法阶段顺序、缺失前置条件和证据不完整的完成请求。
+- 历史阶段证据核验已提交快照；当前 `spec.json` 只核验其最新审批语义，不要求字节永远等于早期阶段版本。
+- 明确 Implementation 没有额外 Claude 阶段审批，避免状态模型要求不存在的审批产物。
+- `complete` 只能在最终 Codex Validation 为 GO、Claude 为 APPROVED 且主 Codex核验通过后成立。
+- 保持小型可变状态账本；本轮不引入事件溯源或通用 reducer。
 
-### 里程碑 1 验收标准
+#### 4. 控制 Claude 审查成本
 
-- [ ] 版本化 schema 可以描述节点、前置条件、转换、失效、终态不变量和所需证据类型。
-- [ ] 对于相同有序事件，纯函数 reducer 产生相同投影和合法动作。
-- [ ] 非法阶段顺序、缺失前置条件、过期的节点尝试结果和证据不完整的完成请求会被拒绝。
-- [ ] 可变的当前批准/readiness 投影发生变化时，历史批准证据仍然有效。
-- [ ] 每次运行记录 graph、policy、schema 和 adapter contract 版本。
-- [ ] 可以用配置表达当前线性 cc-sdd 流程，而不改变已安装的默认工作流。
-- [ ] 合成回放 fixture 覆盖正常路径、一轮/两轮审查修复、连续性中断、上游失效、实现受阻、验证打回和非法转换。
-- [ ] 已测试从事件流重建投影。
-- [ ] Fixture 不包含真实仓库名、源码、提示词、会话记录、任务/会话标识或机器路径。
-- [ ] 架构说明明确区分 cc-sdd 方法职责和监督职责。
+- 每个阶段由 Codex 准备有界 dossier：目标、变更产物、必要基线、待核验声明和已有命令证据。
+- 审查提示词明确 Claude 是独立 reviewer，不运行完整 Kiro 规格流程。
+- 同阶段返修复用会话，跨阶段不共享无限增长的上下文。
+- 记录每次调用的耗时、轮次、工具调用和 CLI 可提供的用量元数据，并设置明确停止预算。
+- 保留用户模型/思考默认值、bypass permission 和必要的只读工具；不以全面禁用 skills、MCP、hooks 或 plugins 作为默认省额度方案。
+- Validation 审查优先核验证据，只在证据不足时执行针对性检查。
 
-### 后续里程碑
+#### 5. 项目验证扩展点
 
-1. 持久追加式存储、lease、崩溃恢复、schema migration 和运行故障分类。
-2. 审查者 adapter：阶段档案、阶段内会话恢复、隔离声明，以及 token/工具/时间预算。
-3. 证据驱动的测试影响 provider：focused/affected/full 三层测试和风险覆盖项。
-4. 用量指标，以及基于脱敏失败案例的回归 eval 循环。
+- 允许项目声明预检、focused test 和最终 validation 命令，并将结果作为阶段证据。
+- 通用 skill 不实现 monorepo 依赖图，也不硬编码任何私有仓库的依赖、lock 文件、resolver 或测试布局。
 
-### 本 Issue 建议确认的决策
+### 非目标
 
-1. 使用追加式事件作为事实来源，派生投影作为可变状态。
-2. 保持状态图执行的确定性；模型判断只能通过结构化 adapter 结果进入。
-3. 在 `/kiro-impl` 之后保留 `/kiro-validate-impl`，作为独立功能级收尾。
-4. 复用 cc-sdd 内置逐任务审查者，不在监督层重复实现。
-5. 新阶段使用全新的审查上下文；同阶段修复复用审查会话，并提供有界证据档案。
-6. 将模型/思考强度继承与权限、工具、hook、plugin、MCP 和会话策略分离。
+- 通用状态图、graph schema 或可视化编辑器。
+- 事件溯源、事件回放、projection、lease 或持久化平台。
+- provider-neutral runtime、adapter 框架或多工作流引擎。
+- 新建根级 package 或重组 cc-sdd monorepo。
+- 重写 cc-sdd 的规格技能或逐任务 Implementation 审查。
+- 在公共仓库修复某个下游项目的 `uv.lock` 或测试债务。
+- 默认启用监督 loop，或改变现有 17 个 skill 的默认行为。
+- merge、release、部署或写入上游仓库。
 
-### 待讨论问题
+### 验收标准
 
-- 第一种存储实现应该选择 JSON Lines、SQLite，还是定义接口并提供最小 JSON Lines 参考 adapter？
-- 状态图定义是否应仅包含数据，还是允许使用受约束的 predicate registry 做证据检查？
-- 当前 cc-sdd 的哪个 package 边界最适合以最小侵入方式承载首个 reducer 和 schema？
-- 审查者 adapter 可以在 Codex 和 Claude Code 之间安全保证哪些 capability，而不在内核中引入宿主特定分支？
+- [ ] `--agent codex-skills` 可以安装第 18 个 `kiro-supervise` skill，原有安装测试继续通过。
+- [ ] 未显式调用 `kiro-supervise` 时，cc-sdd 默认行为不变。
+- [ ] 合成测试覆盖五阶段正常路径、规格返修、Validation 打回 Implementation、Tasks 语义失效、恢复、连续性中断和非法转换。
+- [ ] 主任务与五类工作者的职责由协议和测试明确约束。
+- [ ] Requirements、Design、Tasks 和 Validation 的 Claude gate 不能自行写批准或推进状态。
+- [ ] autonomous `/kiro-impl` 默认仍自动 Validation；监督模式不会重复 Validation。
+- [ ] 后续合法更新 `spec.json` 不会使早期已提交阶段产生错误哈希失败。
+- [ ] 非法阶段推进和不完整 `complete` 被代码拒绝。
+- [ ] Claude 同阶段会话可恢复，跨阶段使用新会话；缺少连续性证据时 fail closed。
+- [ ] Claude 调用记录有界 dossier、轮次、耗时、工具/用量观测和停止原因。
+- [ ] 真实 worktree 在 Claude 审查前后保持不变；结果不包含凭证、完整会话或思维链。
+- [ ] 公共 fixture 不包含私有仓库名、源码、机器路径、真实任务/会话标识或运行记录。
 
-### 安全与贡献计划
+### 贡献边界
 
-- 基于当前上游 `main` 的 fork 开展工作，不复制私有原型。
+- 基于 `gotalab/cc-sdd` 当前 `main` 的个人 fork 开展工作。
 - 保留上游署名和 MIT 许可证。
-- 创建非默认分支，并在架构审查期间保持首个 PR 为 draft。
-- 仅使用合成 fixture。
-- 本 Issue 不执行合并、发布、修改上游或更改默认分支保护。
+- 使用非默认分支和 draft PR，小步提交并逐项关联验收标准。
+- 本 Issue 不授权 merge、release、修改默认分支设置或写入上游。

@@ -1,94 +1,86 @@
-# 当前交接：cc-sdd 监督循环/状态图
+# 当前交接：cc-sdd Codex—Claude 监督循环
 
 > 快照日期：2026-08-14（Asia/Tokyo）
-> 状态：中文迁移档案已推送到个人 fork；Bootstrap Issue 和 draft PR 已创建。
+>
+> 状态：已完成网页版第一轮只读审查；产品范围已重新收缩，等待按 Bootstrap Issue 授权实现。
 
-## 已确认方向
+## 当前结论
 
-- 在 `gotalab/cc-sdd` 的 fork 中构建可复用工程，不放入私有消费方仓库。
-- 将当前 cc-sdd v3 视为方法所有者，不重新实现其规格 skills、逐任务 Implementation 审查者、调试者或完成性核验器。
-- 增加通用监督层：版本化状态图、事件账本、隔离阶段工作者、外部对抗性审查者、证据溯源、合法转换、回放、预算和 adapter。
-- 保持面向用户的 Codex 主任务为监督者；每个阶段运行在独立的工作任务/上下文中。
-- Spec 和 Validation 工作者继承监督者的 Codex 模型和思考设置。Implementation 可以通过策略选择显式指定的高能力运行配置，但不得作为引擎硬编码常量。
-- Claude Code 继承用户配置的模型和思考默认值。工具/权限/会话策略是独立关注点。
-- 在配置的修复轮次上限内保持同阶段 Claude 会话连续性；新阶段使用新上下文和有界档案。
-- Implementation 完成后必须执行全新的功能验证。成功需要 cc-sdd 验证结果、独立审查批准和监督者核验。
-- GitHub 是 ChatGPT 网页端工作的持久协作事实来源：Issue、分支、提交、draft PR 和审查评论。
+目标不是构建通用状态图或跨 provider 协议，而是将已经实际运行的线性监督 loop 移植为 cc-sdd fork 中可安装、显式调用的 Codex skill，并修复运行中已经确认的问题。
 
-## 上游实时核验
+cc-sdd v3 继续拥有 Requirements、Design、Tasks、逐任务 Implementation 审查/调试、完成性核验和功能级 Validation。新增 `kiro-supervise` 只负责：
 
-GitHub 只读检查确认：
+- 主 Codex 监督与阶段推进；
+- 隔离的阶段任务；
+- Claude Code 第二模型审查 gate；
+- 主 Codex 独立复核；
+- 有界返修、恢复和运行证据；以及
+- 监督模式下 Validation 的唯一职责分配。
+
+通用 graph/reducer、事件溯源、provider adapter、storage/lease 和 monorepo 测试影响引擎全部延期，且不构成本轮前置条件。
+
+## 已确认的关键决策
+
+1. `kiro-supervise` 作为第 18 个 Codex skill 通过现有 manifest 安装，不建立根级新 package。
+2. 主 Codex 不直接生成规格或实现；每阶段使用新的可见 Codex Desktop 任务。
+3. Requirements、Design、Tasks 和 Validation 接受 Claude 只读对抗性审查；Implementation 继续使用 cc-sdd 内置逐任务审查，不增加重复阶段 reviewer。
+4. 主 Codex 对 Claude finding 逐项核验，并拥有唯一阶段批准权。
+5. Spec 和 Validation 工作者继承监督者的 Codex 模型/思考配置；Implementation 使用 Luna Max 独立任务。
+6. Claude 继承用户级默认模型和思考配置，保持 bypass permission；真实 worktree 由操作系统级只读隔离保护。
+7. 同阶段最多三轮并复用 Claude session；跨阶段使用新 session 和有界 dossier。
+8. Codex 版 `/kiro-impl` 增加默认兼容的 `--final-validation run|deferred`；监督 loop 使用 `deferred`，由新 Validation 任务唯一执行 `/kiro-validate-impl`。
+9. 状态只采用小型可恢复账本；修复已知语义缺陷，但不升级为事件系统。
+
+## 实时核验
 
 | 项目 | 值 |
 | --- | --- |
-| 仓库 | `gotalab/cc-sdd` |
-| 可见性 | 公开 |
-| 默认分支 | `main` |
-| 基线提交 | `29aee950f4addc36f9aeecb9881c46540e71ecc9` |
-| 基线提交日期 | 2026-04-26 |
-| 许可证 | MIT |
-| 当前架构 | v3 Agent Skills；稳定支持 Claude Code 和 Codex |
+| 上游仓库 | `gotalab/cc-sdd` |
+| 上游默认分支 | `main` |
+| 已核验基线 | `29aee950f4addc36f9aeecb9881c46540e71ecc9` |
+| 基线核验日期 | 2026-08-14 |
+| Fork | `nobitalqs/cc-sdd` |
+| 当前工作分支 | `agent/supervised-loop-graph-bootstrap` |
+| Bootstrap Issue | `https://github.com/nobitalqs/cc-sdd/issues/1` |
+| Draft PR | `https://github.com/nobitalqs/cc-sdd/pull/2` |
+| 默认分支保护 | `protect-main` ruleset 已启用；禁止删除和 force push，并要求通过 PR 合入 |
+| 上游写入 | 无 |
 
-这否定了此前“项目已长期停止更新”的假设。创建 fork 分支前应立即重新核验基线。
+当前分支名保留了早期 `graph` 探索字样，仅作为已有 draft PR 的历史分支名；它不再定义产品范围。后续实现提交不得据此恢复 graph 工程。
 
-## GitHub 发布状态
+## 已确认的问题
 
-- Fork：`nobitalqs/cc-sdd`
-- 工作分支：`agent/supervised-loop-graph-bootstrap`
-- Bootstrap Issue：`https://github.com/nobitalqs/cc-sdd/issues/1`
-- Draft PR：`https://github.com/nobitalqs/cc-sdd/pull/2`
-- 默认分支保护：active `protect-main` ruleset（ID `20836014`）；禁止删除和 force push，要求通过 PR 合入，批准数为 0，不要求 status checks。
-- 上游写入：无。
+- autonomous `/kiro-impl` 会自动运行 `/kiro-validate-impl`，而现有 harness 随后又启动新的 Validation 任务，造成重复验证。
+- 多个阶段将持续变化的 `spec.json` 记录为不可变当前产物，后续合法批准会造成早期阶段恢复核验误报。
+- 状态 helper 的阶段顺序主要依赖文档，`complete` 没有完整派生终态条件。
+- Implementation 的协议语义是“无额外阶段审批”，但状态表示仍可能要求与其他阶段相同的审批产物。
+- Claude reviewer 没有有界 dossier 和强制预算，且加载较宽的仓库/工具上下文，容易重复发现并消耗额度。
+- 下游 `uv.lock` 和受影响测试选择属于消费方配置/债务，不能硬编码进公共 cc-sdd skill。
 
-## 私有原型保留的脱敏事实
+## 文档索引
 
-- 原型是一套运行中的、被 Git 忽略的本地 harness，因此识别已审查快照的是其文件摘要，而不是消费方仓库提交。
-- 原型包含状态 helper 和 Claude 审查 wrapper 的单元测试。
-- 仅为验证恢复和终态确实存在，检查过一条已完成 trace 和一条在 Implementation 阶段受阻的 trace。
-- 本交接不包含任何真实 trace、提示词、结果、会话/任务标识、功能名称、源码片段或本地路径。
-- 原型的主要结构缺陷记录在 `harness-v1-decision-graph.md`。
+1. `current-loop-contract.md`：现有 loop 的角色、阶段、gate、会话和模型合同。
+2. `porting-plan.md`：最小仓库落点、修复项、测试矩阵和提交顺序。
+3. `bootstrap-issue.md`：Issue #1 的中文产品与验收合同。
+4. `chatgpt-kickoff.md`：网页版 ChatGPT 的下一轮只读/实现交接提示词。
+5. 本文：当前外部状态、结论和权限边界。
 
-## 已为下一环境准备的文档
+## 下一步
 
-1. `harness-v1-decision-graph.md` — 重建的行为、权限、转换、失效和已知缺陷。
-2. `migration-manifest.md` — 快照摘要、范围边界、目标模块、迁移顺序、风险和发布检查清单。
-3. `bootstrap-issue.md` — 面向架构讨论和里程碑 1 的脱敏 Issue 草案。
-4. `chatgpt-kickoff.md` — 面向具有 GitHub 访问能力的 ChatGPT 网页会话的首轮提示词。
-5. 本交接文档 — 当前决策和外部写入边界。
+1. 使用更新后的 Issue #1 和 draft PR #2 重新进行一次范围核验。
+2. 明确授权实现后，先增加第 18 个 skill 的安装骨架和失败测试。
+3. 按 `porting-plan.md` 的小步提交顺序移植 loop 并修复已知问题。
+4. 保持 PR 为 draft；每个提交报告测试、验收标准和剩余风险。
 
-## 建议的下一步
+## 权限边界
 
-1. 使用 `chatgpt-kickoff.md` 启动 ChatGPT 网页会话，执行第一轮只读架构审查。
-2. 要求网页会话核验当前上游 HEAD，并将交接内容与 cc-sdd v3 的现状逐项对比。
-3. 人工审阅它对 Issue #1 和 draft PR #2 的修改建议。
-4. 仅在里程碑 1 范围再次明确后，单独授权实现性提交；当前授权不包含实现、merge 或 release。
+当前文档更新不授权：
 
-## 外部写入边界
+- 修改私有消费方仓库或运行中 harness；
+- merge、release 或部署；
+- 修改默认分支或 ruleset；
+- 写入 `gotalab/cc-sdd` 上游；
+- 将任务扩展为 graph/reducer、事件平台或 provider runtime；以及
+- 公开真实运行 trace、提示词、仓库源码、机器路径、任务/会话标识或凭证。
 
-当前已授权：
-
-- 本地只读调查；
-- 本地创建和验证脱敏档案；
-- 创建或复用 `gotalab/cc-sdd` 的个人 fork；
-- 在 fork 建立非默认分支并提交本档案；
-- 创建一个中文 Bootstrap Issue 和一个 draft PR。
-
-仍未授权：
-
-- 修改上游；
-- 合并或发布；
-- 更改默认分支、分支保护或仓库设置；
-- 向授权范围外创建评论、标签、release 或其他 GitHub 对象；以及
-- 修改私有消费方仓库或其运行中 harness。
-
-## 恢复检查清单
-
-新会话接管时应报告：
-
-- 实际观察到的 upstream HEAD；
-- 目标 fork/仓库和活动分支；
-- 已存在的 Issue 和 draft PR 链接；
-- 正在讨论的 graph/policy/schema 版本；
-- 最近一次验收证据摘要；
-- 当前里程碑、阻塞项和下一合法动作；以及
-- 未有私有标识进入公开历史的确认。
+任何实现性提交都需要单独的明确授权。
