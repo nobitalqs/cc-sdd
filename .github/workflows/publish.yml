@@ -12,6 +12,8 @@ permissions:
 
 jobs:
   publish:
+    # npm 包与发布身份属于上游；fork 在确定自己的分发方式前不发布。
+    if: github.repository == 'gotalab/cc-sdd'
     runs-on: ubuntu-latest
 
     steps:

@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   close-follow-up-issues:
+    # 上游的自动关闭策略不适用于本 fork 的维护讨论。
+    if: github.repository == 'gotalab/cc-sdd'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v9
