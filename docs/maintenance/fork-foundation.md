@@ -1,6 +1,6 @@
 # Fork foundation change record
 
-Date: 2026-09-08
+Started: 2026-09-08. Remote verification: 2026-09-09.
 
 Base: `gotalab/cc-sdd@29aee950f4addc36f9aeecb9881c46540e71ecc9`, identical to
 `nobitalqs/cc-sdd:main` when this work started.
@@ -34,13 +34,13 @@ LICENSE is added to the package so npm includes the original notice.
 
 | Acceptance | Evidence |
 | --- | --- |
-| Reproducible dependency install and build | Local Node 24.14.1 / npm 11.17.0 install and build passed; clean CI install pending |
+| Reproducible dependency install and build | Local Node 24.14.1 / npm 11.17.0 passed; clean Linux CI installs/builds passed on Node 22 and 24 |
 | Existing unit/manifest tests remain green | 39 files / 193 tests passed locally |
 | Built tarball installs all primary-client assets | Codex and Claude Code, each en/zh: 4/4 passed; packed LICENSE matches root |
 | Missing packaged assets fail validation | Disposable copies missing CLI, Codex kiro-impl, a shared rule, or LICENSE: 4/4 rejected |
 | Fork cannot run inherited write/publish jobs | Explicit repository conditions; actionlint 1.7.12 passed all workflows |
-| PR has Linux Node 22/24 checks | Pending GitHub run |
-| Required checks added without weakening existing rules | Pending successful CI and ruleset readback |
+| PR has Linux Node 22/24 checks | Both jobs passed in [run 34299363051](https://github.com/nobitalqs/cc-sdd/actions/runs/34299363051) against implementation commit `c4a0e5b` |
+| Required checks added without weakening existing rules | Ruleset `protect-main` / `20836014` read back: both checks required from GitHub Actions, strict up-to-date policy; all prior rules/conditions/bypass settings preserved |
 
 Commands: `npm ci --ignore-scripts --no-audit --no-fund`, `npm run build`,
 `npm test`, and `npm run test:package`, from `tools/cc-sdd`.
@@ -50,6 +50,12 @@ existing prepare/build script. CI deliberately installs with `--ignore-scripts`
 then builds explicitly. Negative checks copied the package inputs into disposable
 directories, removed one asset per copy, and required the real `test:package`
 command to fail for that asset. They did not modify the source checkout.
+
+The first remote run also passed 193 tests and all four packed-install cases in
+each Node job. [Issue #3](https://github.com/nobitalqs/cc-sdd/issues/3) tracks this
+work; [Draft PR #4](https://github.com/nobitalqs/cc-sdd/pull/4) carries the code and
+this record. Its current-head checks remain authoritative after documentation
+updates; the linked initial run is evidence for the unchanged implementation.
 
 ## Limits and rollback
 
