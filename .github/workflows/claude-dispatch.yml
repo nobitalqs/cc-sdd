@@ -8,6 +8,8 @@ on:
 
 jobs:
   claude-dispatch:
+    # 保留上游入口，但不在 fork 中运行具有仓库写权限的远程代理。
+    if: github.repository == 'gotalab/cc-sdd'
     runs-on: ubuntu-latest
     permissions:
       contents: write

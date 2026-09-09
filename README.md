@@ -1,5 +1,7 @@
 # cc-sdd: Long-running spec-driven implementation for AI coding agents
 
+> **Fork: [nobitalqs/cc-sdd](https://github.com/nobitalqs/cc-sdd).** This fork focuses on spec-driven development for substantial features and system changes, with Codex and Claude Code as primary clients. The initial foundation preserves upstream workflow behavior; design improvements will be evaluated separately. See the [fork maintenance guide](docs/FORK.md) for development, validation, and upstream synchronization. The npm badges and `npx cc-sdd@latest` instructions below refer to the **upstream package**, not a release of this fork.
+
 <!-- npm badges -->
 [![npm version](https://img.shields.io/npm/v/cc-sdd?logo=npm)](https://www.npmjs.com/package/cc-sdd?activeTab=readme)
 [![install size](https://packagephobia.com/badge?p=cc-sdd)](https://packagephobia.com/result?p=cc-sdd)
